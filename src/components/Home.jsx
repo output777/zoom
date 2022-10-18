@@ -1,103 +1,51 @@
 import React, { useEffect, useState } from 'react'
+import io from 'socket.io-client';
+import styled from 'styled-components';
 
 const Home = () => {
-  const [input, setInput] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [message, setMessage] = useState('')
-  const [list, setList] = useState([]);
+  const [roomInput, setRoomInput] = useState('')
+  const socket = io.connect('http://localhost:5000');
+  console.log('socket', socket)
 
-  const socket = new WebSocket(`ws://localhost:5000`);
 
-  function makeMessage(type, payload) {
-    // 여기서 객체인데 type, payload 하나만 넣어주는 거 궁금함, 찾아보기
-    const msg = { type, payload };
-    return JSON.stringify(msg);
+  function backendDone(msg) {
+    console.log(`The backend says: `, msg);
   }
 
-  socket.addEventListener('open', () => {
-    console.log('Connected to Server ✅')
-  })
-
-  socket.addEventListener('message', (message) => {
-    console.log('New message: ', message.data);
-    setMessage(message.data)
-  })
-
-  useEffect(() => {
-    if (message.length > 0) {
-      console.log(message);
-      setList((prev) => [...prev, message])
-    }
-  }, [message])
-
-  console.log('message', message)
-
-  socket.addEventListener('close', () => {
-    console.log('Disconnected from Server ❌');
-  })
-
-  function handleInput(event) {
+  function handleRoomInput(event) {
     const { value } = event.target;
-    setInput(value);
+    setRoomInput(value);
   }
 
-  function handleNickInput(event) {
-    const { value } = event.target;
-    setNickname(value);
-  }
-
-  function handleSubmit(event) {
+  function handleRoomSubmit(event) {
     event.preventDefault();
-    socket.send(makeMessage('new_message', input));
-    setInput('');
+    socket.emit("enter_room", { payload: roomInput }, backendDone)
+    setRoomInput('');
   }
-
-
-  function handleNickSubmit(event) {
-    event.preventDefault();
-    socket.send(makeMessage('nickname', nickname));
-    setNickname('');
-  }
-
-
-  // setTimeout(() => {
-  //   socket.send('hello from the browser!');
-  // }, 3000)
 
   return (
     <div>
-      <header>
+      <StHeader>
         <h1>zoom</h1>
-      </header>
-      <main>
-        <form onSubmit={handleNickSubmit}>
-          <input
-            type='text'
-            placeholder='choose a nickname'
-            value={nickname}
-            onChange={handleNickInput}
-            required
-          />
-          <button>Save</button>
-        </form>
-        <ul>
-          {list.map((msg, index) => (
-            <li key={index}>{msg}</li>
-          ))}
-        </ul>
-        <form onSubmit={handleSubmit}>
-          <input
-            type='text'
-            placeholder='write a msg'
-            value={input}
-            onChange={handleInput}
-            required
-          />
-          <button>Send</button>
-        </form>
-      </main>
+      </StHeader>
+      <StMain>
+        <div id='welcome'>
+          <form onSubmit={handleRoomSubmit}>
+            <input type="text" placeholder='room name' value={roomInput} required onChange={handleRoomInput} />
+            <button>Enter Room</button>
+          </form>
+        </div>
+      </StMain>
     </div>
   )
 }
+
+
+const StHeader = styled.header`
+  
+`
+const StMain = styled.main`
+  
+`
 
 export default Home
